@@ -27,6 +27,7 @@ import {
   mockSavedCharts } from
 '../data/mockData';
 import { DictationPanel } from '../components/DictationPanel';
+import { ExtractedField } from '../lib/extractFields';
 import { toast } from 'sonner';
 import { SavedChart } from '../types';
 type TabType = 'details' | 'imaging' | 'labs' | 'new_chart';
@@ -174,36 +175,34 @@ export function PatientChartPage() {
     toast.success('New chart saved successfully');
     setActiveTab('details');
   };
-  const handleAcceptDictationField = (label: string, value: string) => {
+  const handleAcceptDictationField = (field: ExtractedField) => {
+    const { key, label, value, formValue } = field;
     setNewChartData((prev) => {
-      const existingFieldIndex = prev.extractedFields.findIndex(
-        (f) => f.label === label
-      );
-      if (existingFieldIndex >= 0) {
-        const newFields = [...prev.extractedFields];
-        newFields[existingFieldIndex] = {
-          ...newFields[existingFieldIndex],
-          value,
-          confidenceScore: 99
-        };
-        return {
-          ...prev,
-          extractedFields: newFields
-        };
+      // 1. Write the value into the matching form input
+      let next = { ...prev } as typeof prev;
+      if (key === 'symptoms') {
+        const incoming = formValue.split('|').filter(Boolean);
+        const existing = prev.symptoms.filter((s) => s.trim());
+        const merged = [...existing];
+        incoming.forEach((s) => {
+          if (!merged.some((m) => m.toLowerCase() === s.toLowerCase())) merged.push(s);
+        });
+        next.symptoms = merged.length ? merged : [''];
       } else {
-        return {
-          ...prev,
-          extractedFields: [
-          ...prev.extractedFields,
-          {
-            id: `new-${Date.now()}`,
-            label,
-            value,
-            confidenceScore: 99
-          }]
-
-        };
+        next = { ...next, [key]: formValue };
       }
+      // 2. Keep a list of what the AI filled in
+      const existingFieldIndex = prev.extractedFields.findIndex((f) => f.label === label);
+      const entry = {
+        id: `new-${Date.now()}-${key}`,
+        label,
+        value,
+        confidenceScore: field.confidenceScore
+      };
+      const extractedFields = [...prev.extractedFields];
+      if (existingFieldIndex >= 0) extractedFields[existingFieldIndex] = entry;else
+      extractedFields.push(entry);
+      return { ...next, extractedFields };
     });
   };
   const getConfidenceColor = (score: number) => {
