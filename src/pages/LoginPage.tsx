@@ -1,4 +1,3 @@
-import React from 'react';
 import { LoginForm } from '../components/LoginForm';
 import { Role } from '../types';
 import { motion } from 'framer-motion';

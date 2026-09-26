@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -11,7 +11,24 @@ import { FlaggedPage } from './pages/FlaggedPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { User, Role } from './types';
 export function App() {
-  const [user, setUser] = useState<User | null>(null);
+  // Keep the signed-in user across page refreshes (demo only - no real backend)
+  const [user, setUserState] = useState<User | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('medscribe_user');
+      return saved ? (JSON.parse(saved) as User) : null;
+    } catch {
+      return null;
+    }
+  });
+  const setUser = (u: User | null) => {
+    setUserState(u);
+    try {
+      if (u) sessionStorage.setItem('medscribe_user', JSON.stringify(u));
+      else sessionStorage.removeItem('medscribe_user');
+    } catch {
+      /* storage unavailable - ignore */
+    }
+  };
   const handleLogin = async (email: string, role: Role) => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -62,6 +79,7 @@ export function App() {
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>);
 

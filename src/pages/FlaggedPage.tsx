@@ -1,4 +1,3 @@
-import React, { Component } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangleIcon } from 'lucide-react';
 import { mockFlaggedItems } from '../data/mockData';
